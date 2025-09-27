@@ -1,0 +1,29 @@
+@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700&display=swap');
+
+:root {
+  --primary-color: #007bff; /* A classic, professional blue */
+  --primary-hover: #0056b3;
+  --secondary-color: #28a745; /* A calm green */
+  --secondary-hover: #218838;
+  --danger-color: #dc3545;
+  --danger-hover: #c82333;
+  --background-color: #f8f9fa; /* Lighter grey background */
+  --card-background: #ffffff;
+  --text-color: #343a40; /* Darker, softer text */
+  --header-background: #2d3748; /* Dark bluish-grey from previous design */
+  --border-color: #dee2e6;
+}
+
+body {
+  margin: 0;
+  font-family: 'Nunito', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background-color: var(--background-color);
+  color: var(--text-color);
+}
+
+code {
+  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
+    monospace;
+}
