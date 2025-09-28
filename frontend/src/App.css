@@ -56,7 +56,8 @@ main {
 }
 
 input[type="text"],
-textarea {
+textarea,
+select {
   width: 100%;
   padding: 12px;
   border: 1px solid var(--border-color);
@@ -69,7 +70,8 @@ textarea {
 }
 
 input[type="text"]:focus,
-textarea:focus {
+textarea:focus,
+select:focus {
   outline: none;
   border-color: var(--primary-color);
   box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
@@ -161,21 +163,21 @@ button:disabled {
 }
 
 .voice-controls {
-  display: grid;
-  grid-template-columns: 2fr 1fr; /* Dropdown takes more space */
+  display: flex;
   gap: 1rem;
   margin-top: 1rem;
   align-items: center;
 }
 
 .voice-controls select {
-  width: 100%;
-  padding: 12px;
-  border: 1px solid var(--border-color);
-  border-radius: 6px;
-  font-size: 1rem;
-  font-family: 'Nunito', sans-serif;
-  background-color: #fff;
+  flex-grow: 1;
+  margin-bottom: 0; /* Override default margin */
+}
+
+.voice-controls button {
+  width: auto;
+  flex-shrink: 0;
+  margin-bottom: 0; /* Override default margin */
 }
 
 @keyframes fadeIn {

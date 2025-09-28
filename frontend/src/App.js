@@ -24,6 +24,7 @@ const RegistrationForm = ({ onRegister }) => {
   const [name, setName] = useState('');
   const [school, setSchool] = useState('');
   const [home, setHome] = useState('');
+  const [gender, setGender] = useState('boy'); // Default to 'boy'
 
   const handleRegister = async () => {
     if (!name) {
@@ -31,7 +32,7 @@ const RegistrationForm = ({ onRegister }) => {
       return;
     }
     try {
-      const result = await axios.post('/api/child', { name, school, home });
+      const result = await axios.post('/api/child', { name, school, home, gender });
       onRegister(result.data); // Pass the new child data back up
       alert('Information saved!');
     } catch (error) {
@@ -46,6 +47,11 @@ const RegistrationForm = ({ onRegister }) => {
       <input type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder="Child's Name*" />
       <input type="text" value={school} onChange={(e) => setSchool(e.target.value)} placeholder="School Name" />
       <input type="text" value={home} onChange={(e) => setHome(e.target.value)} placeholder="Home Location" />
+      <select value={gender} onChange={(e) => setGender(e.target.value)}>
+        <option value="boy">Boy</option>
+        <option value="girl">Girl</option>
+        <option value="they">They/Them</option>
+      </select>
       <button onClick={handleRegister}>Save & Start</button>
     </div>
   );
@@ -57,7 +63,7 @@ const CommunicationUI = ({ child, onGoBack }) => {
   const [completedMessage, setCompletedMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isListening, setIsListening] = useState(false);
-  const [ttsText, setTtsText] = useState(''); // This will now hold the agent's response
+  const [ttsText, setTtsText] = useState('');
   const [voices, setVoices] = useState([]);
   const [selectedVoice, setSelectedVoice] = useState(null);
   const recognitionRef = useRef(null);
@@ -67,12 +73,11 @@ const CommunicationUI = ({ child, onGoBack }) => {
       const availableVoices = speechSynthesis.getVoices();
       if (availableVoices.length > 0) {
         setVoices(availableVoices);
-        setSelectedVoice(availableVoices[0]); // Set a default voice
+        setSelectedVoice(availableVoices[0]);
       }
     };
-    // Voices are loaded asynchronously
     speechSynthesis.onvoiceschanged = loadVoices;
-    loadVoices(); // Initial call
+    loadVoices();
   }, []);
 
   const handleCompleteSentence = async () => {
@@ -99,7 +104,7 @@ const CommunicationUI = ({ child, onGoBack }) => {
     setIsLoading(true);
     try {
       const result = await axios.post('/api/respond', {
-        text: completedMessage, // Send the *completed* message for context
+        text: completedMessage,
         user_info: { name: child.name },
       });
       setTtsText(result.data.reply);
@@ -114,42 +119,47 @@ const CommunicationUI = ({ child, onGoBack }) => {
   const handleListen = () => {
     if (isListening) {
       if (recognitionRef.current) recognitionRef.current.stop();
-      setIsListening(false);
       return;
     }
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (SpeechRecognition) {
-      const recognition = new SpeechRecognition();
-      recognitionRef.current = recognition;
-      recognition.continuous = true;
-      recognition.interimResults = true;
-      recognition.lang = 'en-US';
-      recognition.onstart = () => setIsListening(true);
-      recognition.onresult = (event) => {
-        let finalTranscript = '';
-        for (let i = event.resultIndex; i < event.results.length; ++i) {
-          if (event.results[i].isFinal) finalTranscript += event.results[i][0].transcript;
-        }
-        if (finalTranscript) setMessage(prev => prev + finalTranscript);
-      };
-      recognition.onerror = (event) => {
-        console.error('Speech recognition error:', event.error);
-        setIsListening(false);
-      };
-      recognition.onend = () => setIsListening(false);
-      setMessage('');
-      recognition.start();
-    } else {
+    if (!SpeechRecognition) {
       alert('Speech recognition is not supported in this browser.');
+      return;
     }
+    
+    const recognition = new SpeechRecognition();
+    recognitionRef.current = recognition;
+    recognition.continuous = true;
+    recognition.interimResults = true;
+    recognition.lang = 'en-US';
+    
+    recognition.onstart = () => setIsListening(true);
+    recognition.onend = () => {
+      recognitionRef.current = null;
+      setIsListening(false);
+    };
+    recognition.onerror = (event) => {
+      console.error('Speech recognition error:', event.error);
+      alert(`Speech recognition error: ${event.error}`);
+      setIsListening(false);
+    };
+    
+    recognition.onresult = (event) => {
+      const transcript = Array.from(event.results)
+        .map(result => result[0])
+        .map(result => result.transcript)
+        .join('');
+      setMessage(transcript);
+    };
+    
+    setMessage('');
+    recognition.start();
   };
 
   const handleSpeak = () => {
     if (ttsText && 'speechSynthesis' in window) {
       const utterance = new SpeechSynthesisUtterance(ttsText);
-      if (selectedVoice) {
-        utterance.voice = selectedVoice;
-      }
+      if (selectedVoice) utterance.voice = selectedVoice;
       speechSynthesis.speak(utterance);
     }
   };
@@ -161,7 +171,7 @@ const CommunicationUI = ({ child, onGoBack }) => {
         <textarea value={message} onChange={(e) => setMessage(e.target.value)} placeholder="Type or speak..." rows="4" />
         <div className="button-group">
           <button onClick={handleCompleteSentence} disabled={isLoading}>{isLoading ? 'Completing...' : 'Complete'}</button>
-          <button onClick={handleListen} className={isListening ? 'listening' : ''}>{isListening ? 'Stop' : 'Listen'}</button>
+          <button onClick={handleListen} className={isListening ? 'listening' : ''}>{isListening ? 'Stop Listening' : 'Listen'}</button>
         </div>
         {completedMessage && (
           <div className="response-box">
@@ -195,10 +205,9 @@ const CommunicationUI = ({ child, onGoBack }) => {
   );
 };
 
-
 // --- Main App Component ---
 function App() {
-  const [view, setView] = useState('loading'); // loading, select, register, chat
+  const [view, setView] = useState('loading');
   const [children, setChildren] = useState([]);
   const [selectedChild, setSelectedChild] = useState(null);
 
@@ -210,7 +219,7 @@ function App() {
         setView('select');
       } catch (error) {
         console.error("Failed to fetch children:", error);
-        setView('register'); // Fallback to register if fetch fails
+        setView('register');
       }
     };
     fetchChildren();
@@ -239,7 +248,6 @@ function App() {
         return <RegistrationForm onRegister={handleRegisterChild} />;
       case 'chat':
         return <CommunicationUI child={selectedChild} onGoBack={() => setView('select')} />;
-      case 'loading':
       default:
         return <div className="card"><h2>Loading...</h2></div>;
     }
@@ -248,7 +256,7 @@ function App() {
   return (
     <div className="App">
       <header className="App-header">
-        <h1>Autism Child Communication Assistant</h1>
+        <h1>Communication Assistant</h1>
         {view === 'chat' && (
           <button onClick={() => setView('select')} className="back-btn">
             Change Child

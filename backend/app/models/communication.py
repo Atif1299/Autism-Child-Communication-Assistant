@@ -5,6 +5,7 @@ class UserInfo(BaseModel):
     name: Optional[str] = None
     school: Optional[str] = None
     home: Optional[str] = None
+    gender: Optional[str] = None
 
 class MessageRequest(BaseModel):
     text: str

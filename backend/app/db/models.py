@@ -12,6 +12,7 @@ class Child(Base):
     name = Column(String, index=True, unique=True)
     school_name = Column(String)
     home_location = Column(String)
+    gender = Column(String) # Added gender field
 
     conversations = relationship("Conversation", back_populates="child")
 
